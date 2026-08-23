@@ -124,7 +124,12 @@ Confirmed property names worth remembering directly (skips a `list_properties` r
   `parameterName` + `defaultValue: {r,g,b,a}`. `ScalarParameter` → `parameterName` +
   `defaultValue: <float>`. `ComponentMask` → `r`,`g`,`b`,`a` booleans (which channels pass
   through), single unnamed input pin (`get_expression_input_names` returns `["None"]` —
-  pass `""` as the pin name to `connect_expressions`). `Abs` is also single-input/`"None"`.
+  pass `""` as the pin name to `connect_expressions`). `Abs` is also single-input/`"None"`,
+  and so are `Frac`, `OneMinus`, `Sine`/`Cosine` (confirmed via a throwaway discovery
+  `add_expression` + `get_expression_input_names` before using them for real — cheap
+  insurance since `execute_tool_script` isn't transactional). `MaterialExpressionTime` has
+  **zero** input pins. `VectorParameter` also exposes an `"RGB"` output pin (besides the
+  default `""`) for wiring just the color channels into a float3 input.
   `Subtract`/`Add`/`Max`/`Multiply`/`Divide` → inputs `["A","B"]`. `LinearInterpolate`
   (Lerp) → `["A","B","Alpha"]`. `Step` → `["Y","X"]`, where `Y` is the threshold and `X`
   is the value being tested (`output = X >= Y`).
@@ -237,7 +242,20 @@ trusting paths named earlier in a long session. `BP_RTSCamera` is still under
   is the BP subclass instantiated by the controller; confirmed spawning correctly in PIE.
 - `/Game/Game/UI/WBP_SelectionBox` — parented to `URTSSelectionBoxWidget`. Tree is
   `RootCanvas` (CanvasPanel) → `SelectionBox` (Border, matches the C++ `BindWidget` name),
-  background brush uses `M_SelectionBoxOverlay`.
+  background brush uses `M_SelectionBoxOverlay`. The C++ side (`SetSelectionBox`) grabs a
+  dynamic material instance via `UBorder::GetDynamicMaterial()` and feeds it
+  `BoxWidthPixels`/`BoxHeightPixels` (the box's on-screen size) on every resize.
+- `/Game/Game/MaterialLibrary/M_SelectionBoxOverlay` — rebuilt (2026-08-23) so the border
+  reads as a constant pixel thickness on both axes instead of scaling/skewing with the box:
+  `BorderThicknessPixels` (was `BorderThickness`, a 0-1 UV fraction — renamed and
+  repurposed to a pixel value, default `3.0`) is divided by `BoxWidthPixels`/
+  `BoxHeightPixels` separately per axis before the edge-distance `Step` test, instead of the
+  old single `Max(|U-0.5|,|V-0.5|)` UV-space threshold. Also added: an animated diagonal
+  scifi grid inside the fill area (`GridDensity`/`GridLineThickness`/`GridScrollSpeed`/
+  `GridEmissiveStrength`, driven by a `Time` node, masked to the fill region only) and a
+  pulsing emissive glow on the border (`PulseSpeed`/`PulseStrength`, `Sine(Time*PulseSpeed)`
+  multiplied into the border color). `FillColor`/`BorderColor`/`FillOpacity`/
+  `BorderOpacity` params are unchanged from before.
 - `/Game/Game/Entities/Units/BP_Unit_Blue`, `BP_Unit_Red` — parented to `ARTSUnit`.
 - `/Game/Game/Entities/Buildings/BP_Building_Blue`, `BP_Building_Red` — parented to
   `ARTSBuilding`.

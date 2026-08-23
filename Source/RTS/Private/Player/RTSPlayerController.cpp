@@ -13,6 +13,11 @@
 #include "UI/RTSSelectionBoxWidget.h"
 #include "Units/RTSUnit.h"
 
+ARTSPlayerController::ARTSPlayerController()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
 void ARTSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -46,7 +51,8 @@ void ARTSPlayerController::BeginPlay()
 			break;
 		}
 
-		if (ARTSCamera* CameraPawn = GetWorld()->SpawnActor<ARTSCamera>(CameraClass, SpawnTransform))
+		CameraPawn = GetWorld()->SpawnActor<ARTSCamera>(CameraClass, SpawnTransform);
+		if (CameraPawn)
 		{
 			Possess(CameraPawn);
 		}
@@ -64,6 +70,48 @@ void ARTSPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Started, this, &ARTSPlayerController::StartDragSelection);
 			EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this, &ARTSPlayerController::UpdateDragSelection);
 			EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Completed, this, &ARTSPlayerController::EndDragSelection);
+		}
+		if (CommandAction)
+		{
+			EnhancedInputComponent->BindAction(CommandAction, ETriggerEvent::Completed, this, &ARTSPlayerController::Command);
+		}
+	}
+}
+
+void ARTSPlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Verify if player's cursor location is at the edge of the window, if so; move the camera.
+	FVector2D CurrentScreenPosition;
+	if (!GetMousePosition(CurrentScreenPosition.X, CurrentScreenPosition.Y))
+	{
+		// Cursor isn't over the viewport (e.g. window unfocused) - nothing to do.
+		return;
+	}
+
+	int32 ViewportWidth, ViewportHeight;
+	GetViewportSize(ViewportWidth, ViewportHeight);
+	FVector2D ViewportSize(ViewportWidth, ViewportHeight);
+
+	// [0.0 - 1.0] cursor position relative to viewport size, used only for direction below.
+	FVector2D NormalizedMousePosition = CurrentScreenPosition / ViewportSize;
+
+	// Margin in pixels, same thickness on both axes, scaled off the shorter viewport
+	// dimension so it stays proportionate across resolutions and aspect ratios.
+	const float EdgeMarginPixels = EdgeMarginFraction * FMath::Min(ViewportWidth, ViewportHeight);
+	const bool bNearEdgeX = CurrentScreenPosition.X < EdgeMarginPixels || CurrentScreenPosition.X > ViewportWidth - EdgeMarginPixels;
+	const bool bNearEdgeY = CurrentScreenPosition.Y < EdgeMarginPixels || CurrentScreenPosition.Y > ViewportHeight - EdgeMarginPixels;
+
+	if (bNearEdgeX || bNearEdgeY)
+	{
+		// Cursor is close to the edge, start moving.
+		FVector2D MoveDirection = NormalizedMousePosition * 2.0 - 1.0;
+		MoveDirection.Normalize();
+
+		if (IsValid(CameraPawn))
+		{
+			CameraPawn->Move(DeltaSeconds, MoveDirection);
 		}
 	}
 }
@@ -120,6 +168,11 @@ void ARTSPlayerController::ClearSelection()
 
 void ARTSPlayerController::Command()
 {
+	FVector2D CommandPosition;
+	GetMousePosition(CommandPosition.X, CommandPosition.Y);
+	
+	
+	// TODO: project screen pos to world, use trace to find object.
 }
 
 void ARTSPlayerController::FindUnitsInSelectionBox(const FVector2D& BoxStart, const FVector2D& BoxEnd)
@@ -132,6 +185,7 @@ void ARTSPlayerController::FindUnitsInSelectionBox(const FVector2D& BoxStart, co
 	TArray<TWeakObjectPtr<ARTSUnit>> NewSelectedUnits;
 	for (TActorIterator<ARTSUnit> It(GetWorld()); It; ++It)
 	{
+		// TODO: might it not be more efficient to use box. trace here? If not, look into spatial grid tree of unit placement to query.
 		ARTSUnit* Unit = *It;
 		FVector2D ScreenPosition;
 		if (!ProjectWorldLocationToScreen(Unit->GetActorLocation(), ScreenPosition))

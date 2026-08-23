@@ -19,11 +19,17 @@ class RTS_API ARTSCamera : public APawn
 
 public:
 	ARTSCamera();
+	
+	void Move(float DeltaSeconds, FVector2D Direction);
 
 protected:
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="RTS")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="RTS|Camera")
 	TObjectPtr<USpringArmComponent> SpringArm;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="RTS")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="RTS|Camera")
 	TObjectPtr<UCameraComponent> Camera;
+		
+	UPROPERTY(EditDefaultsOnly, Category="RTS|Camera")
+	float MovementSpeed = 1000.0f;
+	
 };

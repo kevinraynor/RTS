@@ -32,3 +32,12 @@ ARTSCamera::ARTSCamera()
 	// Possessed explicitly by ARTSPlayerController via CameraClass, not GameMode/auto-possess.
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 }
+
+void ARTSCamera::Move(float DeltaSeconds, FVector2D Direction)
+{
+	FVector ActorLocation = GetActorLocation();
+	FVector ForwardVector = GetActorForwardVector();
+	FVector RightVector = GetActorRightVector();
+	ActorLocation += (ForwardVector * -Direction.Y + RightVector * Direction.X) * MovementSpeed * DeltaSeconds;
+	SetActorLocation(ActorLocation);
+}

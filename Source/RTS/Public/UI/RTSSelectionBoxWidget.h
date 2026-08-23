@@ -8,6 +8,7 @@
 
 class UBorder;
 class UCanvasPanelSlot;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class RTS_API URTSSelectionBoxWidget : public UUserWidget
@@ -28,4 +29,10 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UCanvasPanelSlot> SelectionBoxSlot;
+
+	// Dynamic instance of the SelectionBox border's material, so its on-screen pixel
+	// size can be fed in as a parameter (see SetSelectionBox) and border thickness kept
+	// constant in pixels regardless of box size/aspect ratio.
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> SelectionBoxMID;
 };
