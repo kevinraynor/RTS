@@ -38,7 +38,7 @@ public:
 	void ClearSelection();
 
 	UFUNCTION(BlueprintCallable)
-	void Command();
+	void Action();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="RTS|Input")
@@ -48,7 +48,10 @@ protected:
 	TObjectPtr<UInputAction> SelectAction;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="RTS|Input")
-	TObjectPtr<UInputAction> CommandAction;
+	TObjectPtr<UInputAction> ActionAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="RTS|Input")
+	TObjectPtr<UInputAction> PanCameraAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="RTS|UI")
 	TSubclassOf<URTSSelectionBoxWidget> SelectionBoxWidgetClass;

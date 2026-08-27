@@ -71,9 +71,15 @@ void ARTSPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this, &ARTSPlayerController::UpdateDragSelection);
 			EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Completed, this, &ARTSPlayerController::EndDragSelection);
 		}
-		if (CommandAction)
+		if (ActionAction)
 		{
-			EnhancedInputComponent->BindAction(CommandAction, ETriggerEvent::Completed, this, &ARTSPlayerController::Command);
+			EnhancedInputComponent->BindAction(ActionAction, ETriggerEvent::Triggered, this, &ARTSPlayerController::Action);
+		}
+		if (PanCameraAction)
+		{
+			EnhancedInputComponent->BindAction(PanCameraAction, ETriggerEvent::Started, this, &ARTSPlayerController::StartDragSelection);
+			EnhancedInputComponent->BindAction(PanCameraAction, ETriggerEvent::Triggered, this, &ARTSPlayerController::UpdateDragSelection);
+			EnhancedInputComponent->BindAction(PanCameraAction, ETriggerEvent::Completed, this, &ARTSPlayerController::EndDragSelection);
 		}
 	}
 }
@@ -166,13 +172,43 @@ void ARTSPlayerController::ClearSelection()
 	SelectedUnits.Reset();
 }
 
-void ARTSPlayerController::Command()
+void ARTSPlayerController::Action()
 {
 	FVector2D CommandPosition;
 	GetMousePosition(CommandPosition.X, CommandPosition.Y);
 	
-	
 	// TODO: project screen pos to world, use trace to find object.
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	FHitResult HitResult;
+	if (GetHitResultUnderCursorForObjects(ObjectTypes, false, HitResult))
+	{
+		// A game entity has been hit, evaluate what should happen.
+		AActor* Actor = HitResult.GetActor();
+		if (ARTSUnit* Unit = Cast<ARTSUnit>(Actor))
+		{
+			// TODO: Attack via combat component.
+		}
+		else if (ARTSBuilding* Building = Cast<ARTSBuilding>(Actor))
+		{
+			// TODO: Attack, or enter, or do other interesting stuff based on building type and its component(s).
+		}
+	}
+	else 
+	{
+		// Nothing of a gameplay entity was hit, must be terrain/buildings/decor. 
+		// If units are selected, this becomes a "Move" action. If a building is selected
+		// it becomes a "Place Spawn/Flag Location" action.
+		// TODO: Move.
+		if (SelectedUnits.Num() > 0)
+		{
+			// TODO: Move via movement system.
+		}
+		else if (SelectedBuilding.IsValid())
+		{
+			// TODO: Attack, or enter, or do other interesting stuff based on building type and its component(s).
+		}
+	}
 }
 
 void ARTSPlayerController::FindUnitsInSelectionBox(const FVector2D& BoxStart, const FVector2D& BoxEnd)
